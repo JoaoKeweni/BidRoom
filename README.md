@@ -1,6 +1,6 @@
-#BidRoom - Leilão Multiplayer em Tempo Real
+# BidRoom - Leilão Multiplayer em Tempo Real
 
-##Objetivo
+## Objetivo
 
 Desenvolver uma aplicação distribuída utilizando TCP Sockets em Java, onde múltiplos clientes podem participar simultaneamente de uma sala de leilão.
 
@@ -8,24 +8,24 @@ O sistema simula uma economia virtual. Cada participante possui moedas fictícia
 
 O projeto tem como foco demonstrar conceitos de Sistemas Distribuídos, como comunicação cliente-servidor, concorrência, sincronização de estado, protocolo de aplicação e gerenciamento de múltiplas conexões.
 
-##Objetivos Técnicos
+## Objetivos Técnicos
 
--Implementar comunicação utilizando ServerSocket e Socket.
--Desenvolver um protocolo próprio de comunicação.
--Sincronizar informações entre diversos clientes.
--Controlar concorrência durante os lances.
--Centralizar todas as decisões no servidor.
--Manter o estado do sistema consistente.
+- Implementar comunicação utilizando ServerSocket e Socket.
+- Desenvolver um protocolo próprio de comunicação.
+- Sincronizar informações entre diversos clientes.
+- Controlar concorrência durante os lances.
+- Centralizar todas as decisões no servidor.
+- Manter o estado do sistema consistente.
 
-##Tecnologias
+## Tecnologias
 
--Backend
--Java 21 (ou a versão exigida pela disciplina)
--ServerSocket
--Socket
--Threads
--Gson (opcional, para JSON)
--Frontend
--HTML
+- Backend
+- Java 21 (ou a versão exigida pela disciplina)
+- ServerSocket
+- Socket
+- Threads
+- Gson (opcional, para JSON)
+- Frontend
+- HTML
 -CSS
 -JavaScript
