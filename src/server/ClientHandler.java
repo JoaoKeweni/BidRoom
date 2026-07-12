@@ -91,17 +91,16 @@ public class ClientHandler implements Runnable {
 
                     case "PERFIL":
                         if (this.user == null) {
-                            sendMessage("ERROR|Você precisa fazer o LOGIN antes de ver o perfil.");
+                            sendMessage("ERROR|Você não está logado.");
                             break;
                         }
-                        sendMessage("INFO|=== SEU PERFIL ===");
-                        sendMessage("INFO|Nome: " + user.getName());
-                        sendMessage("INFO|Saldo atual: " + user.getBalance() + " moedas");
-                        sendMessage("INFO|Inventário (" + user.getInventory().size() + " itens):");
-                        for (models.Item item : user.getInventory()) {
-                            sendMessage("INFO|  - " + item.getName());
+                        StringBuilder sb = new StringBuilder();
+                        for (int i=0; i < this.user.getInventory().size(); i++) {
+                            sb.append(this.user.getInventory().get(i).getName());
+                            if (i < this.user.getInventory().size() - 1) sb.append(",");
                         }
-                        sendMessage("INFO|==================");
+                        // Envia os dados crús para a aba visual do cliente
+                        sendMessage("PROFILE_DATA|" + this.user.getBalance() + "|" + sb.toString());
                         break;
                         
                     case "ADD_ITEM":

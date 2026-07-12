@@ -46,7 +46,7 @@ public class MainServer {
     private void startAdminConsole() {
         Thread adminThread = new Thread(() -> {
             Scanner scanner = new Scanner(System.in);
-            while (true) {
+            while (scanner.hasNextLine()) {
                 String cmd = scanner.nextLine();
                 if (cmd.equalsIgnoreCase("iniciar")) {
                     auctionManager.startNextAuction();

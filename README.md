@@ -24,8 +24,5 @@ O projeto tem como foco demonstrar conceitos de Sistemas Distribuídos, como com
 - ServerSocket
 - Socket
 - Threads
-- Gson (opcional, para JSON)
 - Frontend
-- HTML
--CSS
--JavaScript
+- Java Swing
