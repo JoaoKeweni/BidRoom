@@ -109,16 +109,17 @@ public class ClientHandler implements Runnable {
                             sendMessage("ERROR|Acesso negado. Apenas o Leiloeiro pode usar este comando.");
                             break;
                         }
-                        if (comando.length >= 3) {
+                        if (comando.length >= 4) {
                             try {
                                 String itemName = comando[1];
                                 double startPrice = Double.parseDouble(comando[2]);
-                                server.getAuctionManager().addItem(itemName, startPrice);
+                                String imageUrl = comando[3]; // FASE 13: Pegamos a URL da foto!
+                                server.getAuctionManager().addItem(itemName, startPrice, imageUrl);
                             } catch (NumberFormatException e) {
                                 sendMessage("ERROR|Preço inválido. Use números (ex: 500.0).");
                             }
                         } else {
-                            sendMessage("ERROR|Formato inválido. Use ADD_ITEM|Nome|Preco");
+                            sendMessage("ERROR|Formato inválido. Use ADD_ITEM|Nome|Preco|URL");
                         }
                         break;
 

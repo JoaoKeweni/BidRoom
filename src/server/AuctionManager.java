@@ -20,9 +20,9 @@ public class AuctionManager {
         // Removidos os itens fixos (hardcoded). Agora o admin vai cadastrar!
     }
 
-    // FASE 11: O Leiloeiro cadastra os itens pela rede
-    public synchronized void addItem(String name, double startPrice) {
-        Item novoItem = new Item(String.valueOf(itemPool.size() + 1), name, startPrice);
+    // FASE 13: O Leiloeiro cadastra os itens pela rede com IMAGEM
+    public synchronized void addItem(String name, double startPrice, String imageUrl) {
+        Item novoItem = new Item(String.valueOf(itemPool.size() + 1), name, startPrice, imageUrl);
         itemPool.add(novoItem);
         System.out.println("Leiloeiro adicionou um item à fila: " + name);
         server.broadcast("INFO|O Leiloeiro adicionou o item [" + name + "] à fila de leilões!");
@@ -63,7 +63,8 @@ public class AuctionManager {
         timeLeft = 30; // O leilão durará 30 segundos
 
         System.out.println("Iniciando leilão para: " + nextItem.getName());
-        server.broadcast("AUCTION_START|" + nextItem.getName() + "|" + nextItem.getStartPrice());
+        // Envia o BROADCAST com todos os detalhes + a URL da imagem
+        server.broadcast("AUCTION_START|" + nextItem.getName() + "|" + nextItem.getStartPrice() + "|" + nextItem.getImageUrl());
 
         // Fase 8: Dispara o relógio
         startTimer();

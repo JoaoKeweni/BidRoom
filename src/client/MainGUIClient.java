@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
+import java.net.URL;
+import javax.imageio.ImageIO;
 
 public class MainGUIClient extends JFrame {
 
@@ -14,22 +16,27 @@ public class MainGUIClient extends JFrame {
     // Componentes da UI
     private JTextArea chatArea;
     private JTextField inputField;
+    
+    // Área de Infos
     private JLabel lblItemName;
     private JLabel lblHighestBid;
     private JLabel lblTimeLeft;
+    private JLabel lblImage; // FASE 13: Container da Imagem!
+    
     private JTextField bidField;
     private JButton btnBid;
     
-    // Painéis
+    // Painéis Mutantes
     private JPanel bottomArea;
     private JPanel bidPanel;
     private JPanel adminPanel;
     private JTextField txtItemName;
     private JTextField txtItemPrice;
+    private JTextField txtItemUrl; // FASE 13: URL da Imagem
     
     public MainGUIClient() {
         setTitle("BidRoom - Leilão Distribuído");
-        setSize(700, 500);
+        setSize(800, 600); // Aumentei um pouco pra caber a imagem confortavelmente
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -38,10 +45,13 @@ public class MainGUIClient extends JFrame {
         } catch (Exception ignored) {}
 
         // --- PAINEL SUPERIOR (LEILÃO) ---
-        JPanel auctionPanel = new JPanel(new GridLayout(4, 1));
+        JPanel auctionPanel = new JPanel(new BorderLayout());
         auctionPanel.setBorder(BorderFactory.createTitledBorder("Mesa do Leiloeiro"));
         auctionPanel.setBackground(new Color(240, 248, 255));
         
+        // Área das Etiquetas (Esquerda)
+        JPanel infoPanel = new JPanel(new GridLayout(3, 1));
+        infoPanel.setOpaque(false);
         lblItemName = new JLabel("Aguardando leilão começar...", SwingConstants.CENTER);
         lblItemName.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblItemName.setForeground(new Color(25, 25, 112));
@@ -53,6 +63,20 @@ public class MainGUIClient extends JFrame {
         lblTimeLeft.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblTimeLeft.setForeground(new Color(178, 34, 34));
         
+        infoPanel.add(lblItemName);
+        infoPanel.add(lblHighestBid);
+        infoPanel.add(lblTimeLeft);
+        
+        // Área da Imagem (Direita)
+        lblImage = new JLabel("Nenhuma Foto", SwingConstants.CENTER);
+        lblImage.setPreferredSize(new Dimension(200, 200));
+        lblImage.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        
+        // Junta os dois na Mesa
+        auctionPanel.add(infoPanel, BorderLayout.CENTER);
+        auctionPanel.add(lblImage, BorderLayout.EAST);
+        
+        // --- ÁREA DE CONTROLES INFERIOR ---
         bottomArea = new JPanel(new BorderLayout());
         bottomArea.setOpaque(false);
         
@@ -69,26 +93,27 @@ public class MainGUIClient extends JFrame {
         bidPanel.add(bidField);
         bidPanel.add(btnBid);
         
-        // FASE 12: Área do Leiloeiro com GridLayout em 2 linhas
+        // FASE 12/13: Área do Leiloeiro com 2 linhas e Campo de URL
         adminPanel = new JPanel(new GridLayout(2, 1, 0, 0));
         adminPanel.setOpaque(false);
         
-        // Linha 1: Cadastro de itens
         JPanel adminRow1 = new JPanel(new FlowLayout());
         adminRow1.setOpaque(false);
         txtItemName = new JTextField(10);
         txtItemPrice = new JTextField(5);
-        JButton btnAddItem = new JButton("Cadastrar Item");
+        txtItemUrl = new JTextField(12); // FASE 13
+        JButton btnAddItem = new JButton("Cadastrar");
         adminRow1.add(new JLabel("Nome:"));
         adminRow1.add(txtItemName);
-        adminRow1.add(new JLabel("Preço:"));
+        adminRow1.add(new JLabel("R$:"));
         adminRow1.add(txtItemPrice);
+        adminRow1.add(new JLabel("URL Foto:"));
+        adminRow1.add(txtItemUrl);
         adminRow1.add(btnAddItem);
 
-        // Linha 2: Controles de Tempo Real
         JPanel adminRow2 = new JPanel(new FlowLayout());
         adminRow2.setOpaque(false);
-        JButton btnStartAuction = new JButton("▶ Iniciar Próximo Leilão");
+        JButton btnStartAuction = new JButton("▶ Iniciar Próximo");
         JButton btnAddTime = new JButton("⏳ +5s");
         JButton btnForceEnd = new JButton("🛑 Encerrar Leilão");
         adminRow2.add(btnStartAuction);
@@ -98,15 +123,11 @@ public class MainGUIClient extends JFrame {
         adminPanel.add(adminRow1);
         adminPanel.add(adminRow2);
         
-        // Por padrão, mostra visão de comprador
+        // Por padrão, comprador
         bottomArea.add(bidPanel, BorderLayout.CENTER);
-        
-        auctionPanel.add(lblItemName);
-        auctionPanel.add(lblHighestBid);
-        auctionPanel.add(lblTimeLeft);
-        auctionPanel.add(bottomArea);
+        auctionPanel.add(bottomArea, BorderLayout.SOUTH);
 
-        // --- CENTRO (CHAT) ---
+        // --- CENTRO (CHAT E LOGS) ---
         chatArea = new JTextArea();
         chatArea.setEditable(false);
         chatArea.setFont(new Font("Consolas", Font.PLAIN, 14));
@@ -128,25 +149,28 @@ public class MainGUIClient extends JFrame {
         add(scrollPane, BorderLayout.CENTER);
         add(chatInputPanel, BorderLayout.SOUTH);
 
-        // --- EVENTOS DE CLIQUE ---
+        // --- EVENTOS ---
         btnBid.addActionListener(e -> enviarLance());
         btnSend.addActionListener(e -> enviarChat());
         inputField.addActionListener(e -> enviarChat()); 
         
-        // Botões do Admin
         btnAddItem.addActionListener(e -> {
             String name = txtItemName.getText().trim();
             String price = txtItemPrice.getText().trim();
-            if(!name.isEmpty() && !price.isEmpty()) {
-                out.println("ADD_ITEM|" + name + "|" + price);
+            String url = txtItemUrl.getText().trim();
+            
+            if(!name.isEmpty() && !price.isEmpty() && !url.isEmpty()) {
+                // ADD_ITEM|Nome|Preco|URL
+                out.println("ADD_ITEM|" + name + "|" + price + "|" + url);
                 txtItemName.setText("");
                 txtItemPrice.setText("");
+                txtItemUrl.setText("");
+            } else {
+                JOptionPane.showMessageDialog(this, "Preencha Nome, Preço e URL!");
             }
         });
         
         btnStartAuction.addActionListener(e -> out.println("START_AUCTION"));
-        
-        // FASE 12: Eventos dos novos controles ao vivo
         btnAddTime.addActionListener(e -> out.println("ADD_TIME|5"));
         btnForceEnd.addActionListener(e -> out.println("FORCE_END_AUCTION"));
     }
@@ -157,7 +181,6 @@ public class MainGUIClient extends JFrame {
             System.exit(0);
         }
         
-        // MUTAÇÃO: Tela do Leiloeiro Supremo
         if (nome.equals("admin1207")) {
             bottomArea.remove(bidPanel);
             bottomArea.add(adminPanel, BorderLayout.CENTER);
@@ -186,9 +209,38 @@ public class MainGUIClient extends JFrame {
             }).start();
 
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Não foi possível conectar ao servidor na porta 5000.\nGaranta que o MainServer está rodando!", "Erro de Conexão", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Não foi possível conectar ao servidor.");
             System.exit(0);
         }
+    }
+
+    private void carregarImagemDaWeb(String imageUrl) {
+        // Zera a imagem antiga
+        lblImage.setIcon(null);
+        lblImage.setText("Carregando foto...");
+        
+        // FASE 13: Thread Paralela! Se a internet for lenta, a tela NÃO trava.
+        new Thread(() -> {
+            try {
+                URL url = new URL(imageUrl);
+                Image image = ImageIO.read(url);
+                if (image != null) {
+                    // Redimensiona pra caber no quadrado de 200x200
+                    Image scaled = image.getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+                    ImageIcon icon = new ImageIcon(scaled);
+                    
+                    // Coloca na tela via SwingUtilities
+                    SwingUtilities.invokeLater(() -> {
+                        lblImage.setText(null);
+                        lblImage.setIcon(icon);
+                    });
+                } else {
+                    SwingUtilities.invokeLater(() -> lblImage.setText("Imagem Inválida"));
+                }
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> lblImage.setText("Falha ao carregar"));
+            }
+        }).start();
     }
 
     private void processarMensagemServidor(String mensagem) {
@@ -201,6 +253,11 @@ public class MainGUIClient extends JFrame {
                     lblItemName.setText("Em leilão: " + partes[1]);
                     lblHighestBid.setText("Maior Lance Inicial: R$ " + partes[2]);
                     appendChat("🔔 O LEILÃO COMEÇOU! Item: " + partes[1]);
+                    
+                    // FASE 13: Recebemos a URL pelo protocolo e mandamos baixar!
+                    if (partes.length >= 4) {
+                        carregarImagemDaWeb(partes[3]);
+                    }
                     break;
                 case "TIME":
                     lblTimeLeft.setText("Tempo restante: " + partes[1] + "s");
@@ -217,6 +274,9 @@ public class MainGUIClient extends JFrame {
                 case "AUCTION_END":
                     lblTimeLeft.setText("TEMPO ENCERRADO");
                     appendChat("🛑 [FIM] " + partes[1]);
+                    // Apaga a imagem para o próximo item
+                    lblImage.setIcon(null);
+                    lblImage.setText("Aguardando próximo...");
                     break;
                 case "CHAT":
                     appendChat("🗣️ [" + partes[1] + "]: " + partes[2]);
