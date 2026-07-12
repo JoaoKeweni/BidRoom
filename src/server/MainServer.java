@@ -10,6 +10,9 @@ public class MainServer {
 
     // Fase 3: Lista thread-safe para manter estado compartilhado dos clientes
     private List<ClientHandler> clients = new CopyOnWriteArrayList<>();
+    
+    // Fase 5: Gerenciador de identidades (Estado Compartilhado de Dados)
+    private UserManager userManager = new UserManager();
 
     public static void main(String[] args) {
         // Criamos uma instância do servidor em vez de fazer tudo estático
@@ -24,8 +27,8 @@ public class MainServer {
                 Socket socket = serverSocket.accept();
                 System.out.println("Novo cliente conectado: " + socket.getInetAddress());
 
-                // Fase 3: Passamos a referência do servidor (this) para o ClientHandler
-                ClientHandler clientHandler = new ClientHandler(socket, this);
+                // Fase 3 e 5: Passamos a referência do servidor e do UserManager para o ClientHandler
+                ClientHandler clientHandler = new ClientHandler(socket, this, userManager);
                 
                 // Adicionamos na lista de clientes conectados
                 clients.add(clientHandler);

@@ -5,23 +5,34 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import models.User; // Fase 5
 
 public class ClientHandler implements Runnable {
 
     private Socket socket;
     private MainServer server;
+    private UserManager userManager; // Fase 5
     private PrintWriter out;
-    private String clientName = "Anônimo"; // Fase 4: Nome do usuário
+    private User user; // Fase 5: Agora temos um Objeto User em vez de só uma String
+    private String tempAddress; // Guarda o IP caso o usuário não tenha feito login ainda
 
-    public ClientHandler(Socket socket, MainServer server) {
+    // Construtor: agora recebe o UserManager
+    public ClientHandler(Socket socket, MainServer server, UserManager userManager) {
         this.socket = socket;
         this.server = server;
+        this.userManager = userManager;
+        this.tempAddress = socket.getInetAddress().toString();
     }
 
     public void sendMessage(String message) {
         if (out != null) {
             out.println(message);
         }
+    }
+    
+    // Método auxiliar para facilitar pegarmos o nome em logs
+    private String getDisplayName() {
+        return (user != null) ? user.getName() : "Anônimo(" + tempAddress + ")";
     }
 
     @Override
@@ -32,16 +43,19 @@ public class ClientHandler implements Runnable {
             
             String mensagem;
             while ((mensagem = in.readLine()) != null) {
-                // Fase 4: Interpreta usando o Protocolo
                 String[] comando = Protocol.parseCommand(mensagem);
                 String acao = comando[0];
 
                 switch (acao) {
                     case "LOGIN":
                         if (comando.length > 1) {
-                            this.clientName = comando[1];
-                            System.out.println("Usuário logou como: " + clientName);
-                            sendMessage("LOGIN_OK|Bem-vindo, " + clientName + "!");
+                            String nomeInformado = comando[1];
+                            
+                            // Fase 5: O UserManager faz o trabalho pesado de criar ou recuperar o saldo
+                            this.user = userManager.login(nomeInformado);
+                            
+                            System.out.println("Usuário logou: " + user.getName() + " com saldo " + user.getBalance());
+                            sendMessage("LOGIN_OK|Bem-vindo, " + user.getName() + "! Saldo atual: " + user.getBalance());
                         } else {
                             sendMessage("ERROR|O comando LOGIN exige um nome. Ex: LOGIN|Joao");
                         }
@@ -50,9 +64,9 @@ public class ClientHandler implements Runnable {
                     case "CHAT":
                         if (comando.length > 1) {
                             String textoChat = comando[1];
-                            System.out.println(clientName + " disse: " + textoChat);
+                            System.out.println(getDisplayName() + " disse: " + textoChat);
                             // Faz o broadcast para todos! (CHAT|Nome|Mensagem)
-                            server.broadcast("CHAT|" + clientName + "|" + textoChat);
+                            server.broadcast("CHAT|" + getDisplayName() + "|" + textoChat);
                         }
                         break;
                         
@@ -65,7 +79,7 @@ public class ClientHandler implements Runnable {
             System.err.println("Erro na comunicação com o cliente: " + e.getMessage());
         } finally {
             try {
-                System.out.println("Cliente desconectou: " + socket.getInetAddress() + " (" + clientName + ")");
+                System.out.println("Cliente desconectou: " + getDisplayName());
                 server.removeClient(this);
                 socket.close();
             } catch (IOException e) {
