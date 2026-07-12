@@ -55,7 +55,8 @@ public class ClientHandler implements Runnable {
                             this.user = userManager.login(nomeInformado);
                             
                             System.out.println("Usuário logou: " + user.getName() + " com saldo " + user.getBalance());
-                            sendMessage("LOGIN_OK|Bem-vindo, " + user.getName() + "! Saldo atual: " + user.getBalance());
+                            sendMessage("LOGIN_OK|Bem-vindo, " + user.getName() + "! Saldo atual: " 
+                                    + user.getBalance());
                         } else {
                             sendMessage("ERROR|O comando LOGIN exige um nome. Ex: LOGIN|Joao");
                         }
@@ -86,6 +87,21 @@ public class ClientHandler implements Runnable {
                         } else {
                             sendMessage("ERROR|O comando BID exige um valor. Ex: BID|1500.0");
                         }
+                        break;
+
+                    case "PERFIL":
+                        if (this.user == null) {
+                            sendMessage("ERROR|Você precisa fazer o LOGIN antes de ver o perfil.");
+                            break;
+                        }
+                        sendMessage("INFO|=== SEU PERFIL ===");
+                        sendMessage("INFO|Nome: " + user.getName());
+                        sendMessage("INFO|Saldo atual: " + user.getBalance() + " moedas");
+                        sendMessage("INFO|Inventário (" + user.getInventory().size() + " itens):");
+                        for (models.Item item : user.getInventory()) {
+                            sendMessage("INFO|  - " + item.getName());
+                        }
+                        sendMessage("INFO|==================");
                         break;
                         
                     default:

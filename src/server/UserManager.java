@@ -6,7 +6,7 @@ import models.User;
 public class UserManager {
     
     // Guarda o nome do usuário como chave e o objeto User como valor (Thread-Safe)
-    private ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
 
     // Realiza o login: cria um novo ou retorna o existente
     public User login(String name) {
