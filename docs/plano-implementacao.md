@@ -7,7 +7,7 @@
 
 ## 1. Visão Geral
 
-Você vai construir um sistema onde vários usuários, cada um no seu próprio programa cliente, se conectam a **um servidor central** para participar de leilões. As pessoas dão lances ao mesmo tempo, conversam num chat, e o servidor decide tudo: quem é o maior lance, quando o leilão acaba, quem ganhou, e transfere as moedas.
+Você vai construir um sistema onde vários usuários, cada um no seu próprio programa cliente, se conectam a **um servidor central** para participar de leilões. As pessoas dão lances ao mesmo tempo, conversam num chat, e o servidor (perfile de adm) decide tudo: quem é o maior lance, quando o leilão acaba, quem ganhou, e transfere as moedas.
 
 O ponto central do projeto — e o que o professor vai avaliar — não é "fazer um leilão bonito". É **demonstrar que você entende como sistemas distribuídos funcionam**: como programas separados conversam pela rede, como lidar com várias pessoas fazendo coisas ao mesmo tempo, e como manter todos vendo a mesma verdade.
 
