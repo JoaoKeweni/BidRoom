@@ -4,36 +4,37 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MainServer {
 
-    // Fase 3: Lista thread-safe para manter estado compartilhado dos clientes
     private List<ClientHandler> clients = new CopyOnWriteArrayList<>();
-    
-    // Fase 5: Gerenciador de identidades (Estado Compartilhado de Dados)
     private UserManager userManager = new UserManager();
+    
+    // Fase 6 e 7: Gerenciador de Leilões
+    private AuctionManager auctionManager;
 
     public static void main(String[] args) {
-        // Criamos uma instância do servidor em vez de fazer tudo estático
         new MainServer().startServer();
     }
 
     public void startServer() {
+        // Inicializa o gerenciador passando a referência do servidor para ele poder fazer broadcast
+        this.auctionManager = new AuctionManager(this);
+        
+        // Thread dedicada para ler comandos do administrador no terminal do servidor
+        startAdminConsole();
+
         try (ServerSocket serverSocket = new ServerSocket(5000)) {
             System.out.println("Servidor escutando na porta 5000...");
+            System.out.println(">>> Digite 'iniciar' a qualquer momento para abrir o 1º leilão <<<");
 
             while (true) {
                 Socket socket = serverSocket.accept();
-                System.out.println("Novo cliente conectado: " + socket.getInetAddress());
-
-                // Fase 3 e 5: Passamos a referência do servidor e do UserManager para o ClientHandler
                 ClientHandler clientHandler = new ClientHandler(socket, this, userManager);
-                
-                // Adicionamos na lista de clientes conectados
                 clients.add(clientHandler);
-                System.out.println("Total de clientes agora: " + clients.size());
-
+                
                 Thread clientThread = new Thread(clientHandler);
                 clientThread.start();
             }
@@ -42,13 +43,24 @@ public class MainServer {
         }
     }
 
-    // Método para ser chamado pelo ClientHandler quando um cliente desconectar
-    public void removeClient(ClientHandler clientHandler) {
-        clients.remove(clientHandler);
-        System.out.println("Cliente removido. Total de clientes conectados: " + clients.size());
+    private void startAdminConsole() {
+        Thread adminThread = new Thread(() -> {
+            Scanner scanner = new Scanner(System.in);
+            while (true) {
+                String cmd = scanner.nextLine();
+                if (cmd.equalsIgnoreCase("iniciar")) {
+                    auctionManager.startNextAuction();
+                }
+            }
+        });
+        adminThread.start();
     }
 
-    // Fase 4: O método broadcast envia mensagem para todos na lista
+    public void removeClient(ClientHandler clientHandler) {
+        clients.remove(clientHandler);
+        System.out.println("Total de clientes conectados: " + clients.size());
+    }
+
     public void broadcast(String message) {
         for (ClientHandler client : clients) {
             client.sendMessage(message);
