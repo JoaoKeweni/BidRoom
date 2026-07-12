@@ -199,35 +199,21 @@ Faça login de 2 usuários. Peça (via comando de debug) o saldo de cada um: amb
 
 ---
 
-### Fase 6 — Cadastro de Itens (modelo Item)
+### Fase 6 — Itens e Início do Leilão (Escopo Reduzido)
 
 **O que fazer:**
-Criar `Item` (id, nome, imagem, dono, preçoInicial). Cliente envia `CREATE_ITEM|nome|preçoInicial|imagem`. O servidor cria o `Item`, associa ao dono, e faz broadcast `NEW_ITEM|...` para todos.
-
-Sobre imagens: para simplificar, comece enviando só o **nome do arquivo** e deixe as imagens numa pasta compartilhada (`storage/images/` ou `client/items/`). Transferir a imagem em bytes pelo socket é possível, mas adiciona complexidade — deixe para o final, se sobrar tempo.
+Criar `Item` (id, nome, preçoInicial) e `Auction` (item, maiorLance, líder, status). O cliente NÃO cadastra itens. Criaremos um `AuctionManager` no servidor que já possui uma lista de itens pré-cadastrados no código.
+O `MainServer` terá um console de administrador (`Scanner`). Quando o administrador digitar `iniciar`, o servidor pega o próximo item da fila, cria o leilão e faz broadcast `AUCTION_START|item|preço` para todos.
 
 **Por que:**
-Introduz a criação de estado a partir de um pedido do cliente, **validado e materializado pelo servidor**. Reforça a regra de ouro: o cliente sugere o item, mas quem cria o objeto oficial é o servidor.
+Reduz a complexidade e foca no essencial: concorrência. O `AuctionManager` centraliza as decisões do leilão — coerente com a regra de ouro onde o cliente nunca dita o estado do servidor.
 
 **Como verificar:**
-João cadastra um item. Maria e Pedro recebem `NEW_ITEM`. O item aparece associado ao João como dono no estado do servidor.
+Abra clientes e o servidor. No terminal do servidor, digite `iniciar`. Todos os clientes conectados devem receber a notificação do início do leilão.
 
 ---
 
-### Fase 7 — Início do Leilão (modelo Auction + AuctionManager)
-
-**O que fazer:**
-Criar `Auction` (item, maiorLance, líder, tempo, status) e o esqueleto do `AuctionManager`. Um comando `START_AUCTION` faz o servidor escolher um item e iniciar o leilão: define maiorLance = preçoInicial, líder = ninguém, status = ABERTO, e faz broadcast `AUCTION_START|item|preço|tempo`.
-
-**Por que:**
-Aqui nasce o objeto central do domínio. O `AuctionManager` centraliza as decisões do leilão — coerente com a regra de ouro. Ainda **sem lances e sem cronômetro**; só o "está aberto, este é o item, este é o preço".
-
-**Como verificar:**
-Dispare `START_AUCTION`. Todos os clientes recebem os dados do leilão (item, preço, tempo). O status no servidor está ABERTO.
-
----
-
-### Fase 8 — Lances com Exclusão Mútua (o coração do projeto) ⭐
+### Fase 7 — Lances com Exclusão Mútua (o coração do projeto) ⭐
 
 **O que fazer:**
 Cliente envia `BID|valor`. O servidor, dentro de uma **seção crítica protegida** (`synchronized` no objeto do leilão ou um `ReentrantLock` no `AuctionManager`), valida **na ordem**:
@@ -249,20 +235,20 @@ Detalhe importante sobre saldo: decida se o dinheiro é "reservado" no momento d
 
 ---
 
-### Fase 9 — Cronômetro Controlado pelo Servidor
+### Fase 8 — Cronômetro Controlado pelo Servidor
 
 **O que fazer:**
 O servidor mantém o tempo restante do leilão (ex.: uma thread do `AuctionManager` que a cada segundo decrementa e faz broadcast `TIME|segundos`). O cliente **só exibe** o número que recebe. Regra extra: se chegar um lance válido nos últimos X segundos, o servidor **reinicia/estende** o cronômetro (anti-sniping).
 
 **Por que:**
-Se cada cliente contasse o próprio tempo, os relógios divergiriam (rede tem atraso) e o leilão acabaria em momentos diferentes para cada um — **inconsistência**. Centralizar o tempo no servidor é a aplicação direta da regra de ouro e de sincronização de estado. Cuidado de concorrência: o cronômetro (uma thread) e os lances (outras threads) mexem no mesmo leilão — o **mesmo lock da Fase 8** deve proteger a transição "tempo chegou a zero → fecha".
+Se cada cliente contasse o próprio tempo, os relógios divergiriam (rede tem atraso) e o leilão acabaria em momentos diferentes para cada um — **inconsistência**. Centralizar o tempo no servidor é a aplicação direta da regra de ouro e de sincronização de estado. Cuidado de concorrência: o cronômetro (uma thread) e os lances (outras threads) mexem no mesmo leilão — o **mesmo lock da Fase 7** deve proteger a transição "tempo chegou a zero → fecha".
 
 **Como verificar:**
 Inicie um leilão de 20s. Os 3 clientes mostram a **mesma** contagem. Dê um lance faltando 2s → o tempo estende. Deixe zerar sem lances → o status vai para ENCERRADO em todos ao mesmo tempo.
 
 ---
 
-### Fase 10 — Finalização e Transferência
+### Fase 9 — Finalização e Transferência
 
 **O que fazer:**
 Quando o tempo zera, o servidor (na seção crítica): fecha o leilão, escolhe o **líder como vencedor**, **debita** as moedas do vencedor, **credita** o dono do item, **transfere o item** para o inventário do vencedor, e faz broadcast `AUCTION_END|vencedor|valor`. Se ninguém deu lance, o item volta/permanece com o dono.
@@ -275,7 +261,7 @@ Rode um leilão completo. Confira que: saldo do vencedor caiu exatamente pelo va
 
 ---
 
-### Fase 11 — Interface Gráfica (por último, de propósito)
+### Fase 10 — Interface Gráfica (por último, de propósito)
 
 **O que fazer:**
 Só agora a interface web (HTML/CSS/JS), inspirada no Kahoot:
@@ -303,12 +289,11 @@ Com a interface, dois usuários reais conseguem: logar, ver o item, dar lances v
 | 3 | `ClientHandler` (lista de clientes) |
 | 4 | `ClientHandler`/`MainServer` (broadcast) |
 | 5 | `models/User.java`, `UserManager.java` |
-| 6 | `models/Item.java` |
-| 7 | `models/Auction.java`, `AuctionManager.java` |
-| 8 | `models/Bid.java`, `AuctionManager` (lock nos lances) |
-| 9 | `AuctionManager` (thread do cronômetro) |
-| 10 | `AuctionManager` + `UserManager` (transferência) |
-| 11 | `client/index.html`, `style.css`, `app.js` |
+| 6 | `models/Item.java`, `models/Auction.java`, `AuctionManager.java` |
+| 7 | `models/Bid.java`, `AuctionManager` (lock nos lances) |
+| 8 | `AuctionManager` (thread do cronômetro) |
+| 9 | `AuctionManager` + `UserManager` (transferência) |
+| 10 | `client/index.html`, `style.css`, `app.js` |
 
 ---
 
@@ -332,10 +317,9 @@ Para dar "cara de trabalho de faculdade", apresente a **evolução**, mapeando c
 2. Login e entrada na sala → *sessões, estado compartilhado*
 3. Chat em tempo real → *broadcast, sincronização*
 4. Usuários e economia virtual → *estado por usuário no servidor*
-5. Cadastro de itens → *criação de estado validada pelo servidor*
-6. Leilão em tempo real → *domínio central, centralização de decisões*
-7. Lances → *concorrência e exclusão mútua* ⭐ (seu ponto alto)
-8. Finalização automática + transferência → *consistência transacional*
-9. Interface e animações → *experiência do usuário*
+5. Itens e Leilão centralizado → *domínio central, centralização de decisões*
+6. Lances → *concorrência e exclusão mútua* ⭐ (seu ponto alto)
+7. Finalização automática + transferência → *consistência transacional*
+8. Interface e animações → *experiência do usuário*
 
-Na defesa, **abra o código da Fase 8** e mostre a seção crítica: é a prova concreta de que você entendeu concorrência, o conceito mais valorizado num trabalho de Sistemas Distribuídos.
+Na defesa, **abra o código da Fase 7** e mostre a seção crítica: é a prova concreta de que você entendeu concorrência, o conceito mais valorizado num trabalho de Sistemas Distribuídos.

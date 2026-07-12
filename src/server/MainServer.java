@@ -66,4 +66,8 @@ public class MainServer {
             client.sendMessage(message);
         }
     }
+
+    public AuctionManager getAuctionManager() {
+        return auctionManager;
+    }
 }

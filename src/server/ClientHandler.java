@@ -69,6 +69,24 @@ public class ClientHandler implements Runnable {
                             server.broadcast("CHAT|" + getDisplayName() + "|" + textoChat);
                         }
                         break;
+
+                    case "BID":
+                        if (this.user == null) {
+                            sendMessage("ERROR|Você precisa fazer o LOGIN antes de dar lances.");
+                            break;
+                        }
+                        if (comando.length > 1) {
+                            try {
+                                double valor = Double.parseDouble(comando[1]);
+                                // Fase 7: Repassa a decisão para o AuctionManager
+                                server.getAuctionManager().processBid(this.user, valor, this);
+                            } catch (NumberFormatException e) {
+                                sendMessage("ERROR|Valor de lance inválido. Use formato double, ex: BID|1500.0");
+                            }
+                        } else {
+                            sendMessage("ERROR|O comando BID exige um valor. Ex: BID|1500.0");
+                        }
+                        break;
                         
                     default:
                         sendMessage("ERROR|Comando desconhecido: " + acao);
