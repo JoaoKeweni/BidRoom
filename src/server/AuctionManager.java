@@ -17,9 +17,33 @@ public class AuctionManager {
 
     public AuctionManager(MainServer server) {
         this.server = server;
-        itemPool.add(new Item("1", "Placa de Vídeo RTX 4090", 5000.0));
-        itemPool.add(new Item("2", "Notebook Gamer", 3500.0));
-        itemPool.add(new Item("3", "Cadeira Ergonômica", 800.0));
+        // Removidos os itens fixos (hardcoded). Agora o admin vai cadastrar!
+    }
+
+    // FASE 11: O Leiloeiro cadastra os itens pela rede
+    public synchronized void addItem(String name, double startPrice) {
+        Item novoItem = new Item(String.valueOf(itemPool.size() + 1), name, startPrice);
+        itemPool.add(novoItem);
+        System.out.println("Leiloeiro adicionou um item à fila: " + name);
+        server.broadcast("INFO|O Leiloeiro adicionou o item [" + name + "] à fila de leilões!");
+    }
+
+    // FASE 12: Funções em tempo real do Leiloeiro
+    public synchronized void addTime(int seconds) {
+        if (currentAuction != null && currentAuction.isOpen() && timeLeft > 0) {
+            timeLeft += seconds;
+            System.out.println("Leiloeiro adicionou +" + seconds + "s ao tempo.");
+            server.broadcast("INFO|O Leiloeiro esticou o tempo em " + seconds + " segundos!");
+            server.broadcast("TIME|" + timeLeft); // Força atualização instantânea visual
+        }
+    }
+
+    public synchronized void forceCloseAuction() {
+        if (currentAuction != null && currentAuction.isOpen() && timeLeft > 0) {
+            timeLeft = 0; // O laço da thread do relógio vai pegar isso no próximo segundo e fechar sozinho
+            System.out.println("Leiloeiro forçou o fim do leilão!");
+            server.broadcast("INFO|O Leiloeiro bateu o martelo! Encerrando...");
+        }
     }
 
     public void startNextAuction() {

@@ -20,36 +20,44 @@ public class MainGUIClient extends JFrame {
     private JTextField bidField;
     private JButton btnBid;
     
+    // Painéis
+    private JPanel bottomArea;
+    private JPanel bidPanel;
+    private JPanel adminPanel;
+    private JTextField txtItemName;
+    private JTextField txtItemPrice;
+    
     public MainGUIClient() {
-        // Configurações Básicas da Janela
         setTitle("BidRoom - Leilão Distribuído");
         setSize(700, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         try {
-            // Tenta usar o visual nativo do Windows/SO
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
 
         // --- PAINEL SUPERIOR (LEILÃO) ---
         JPanel auctionPanel = new JPanel(new GridLayout(4, 1));
         auctionPanel.setBorder(BorderFactory.createTitledBorder("Mesa do Leiloeiro"));
-        auctionPanel.setBackground(new Color(240, 248, 255)); // Azul clarinho
+        auctionPanel.setBackground(new Color(240, 248, 255));
         
         lblItemName = new JLabel("Aguardando leilão começar...", SwingConstants.CENTER);
         lblItemName.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblItemName.setForeground(new Color(25, 25, 112)); // Midnight Blue
+        lblItemName.setForeground(new Color(25, 25, 112));
         
         lblHighestBid = new JLabel("Maior Lance: R$ 0.00", SwingConstants.CENTER);
         lblHighestBid.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         
         lblTimeLeft = new JLabel("Tempo: --", SwingConstants.CENTER);
         lblTimeLeft.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblTimeLeft.setForeground(new Color(178, 34, 34)); // Firebrick Red
+        lblTimeLeft.setForeground(new Color(178, 34, 34));
         
-        // Área de dar lance
-        JPanel bidPanel = new JPanel(new FlowLayout());
+        bottomArea = new JPanel(new BorderLayout());
+        bottomArea.setOpaque(false);
+        
+        // Área de dar lance (Comprador)
+        bidPanel = new JPanel(new FlowLayout());
         bidPanel.setOpaque(false);
         bidField = new JTextField(10);
         btnBid = new JButton("Dar Lance!");
@@ -61,12 +69,44 @@ public class MainGUIClient extends JFrame {
         bidPanel.add(bidField);
         bidPanel.add(btnBid);
         
+        // FASE 12: Área do Leiloeiro com GridLayout em 2 linhas
+        adminPanel = new JPanel(new GridLayout(2, 1, 0, 0));
+        adminPanel.setOpaque(false);
+        
+        // Linha 1: Cadastro de itens
+        JPanel adminRow1 = new JPanel(new FlowLayout());
+        adminRow1.setOpaque(false);
+        txtItemName = new JTextField(10);
+        txtItemPrice = new JTextField(5);
+        JButton btnAddItem = new JButton("Cadastrar Item");
+        adminRow1.add(new JLabel("Nome:"));
+        adminRow1.add(txtItemName);
+        adminRow1.add(new JLabel("Preço:"));
+        adminRow1.add(txtItemPrice);
+        adminRow1.add(btnAddItem);
+
+        // Linha 2: Controles de Tempo Real
+        JPanel adminRow2 = new JPanel(new FlowLayout());
+        adminRow2.setOpaque(false);
+        JButton btnStartAuction = new JButton("▶ Iniciar Próximo Leilão");
+        JButton btnAddTime = new JButton("⏳ +5s");
+        JButton btnForceEnd = new JButton("🛑 Encerrar Leilão");
+        adminRow2.add(btnStartAuction);
+        adminRow2.add(btnAddTime);
+        adminRow2.add(btnForceEnd);
+        
+        adminPanel.add(adminRow1);
+        adminPanel.add(adminRow2);
+        
+        // Por padrão, mostra visão de comprador
+        bottomArea.add(bidPanel, BorderLayout.CENTER);
+        
         auctionPanel.add(lblItemName);
         auctionPanel.add(lblHighestBid);
         auctionPanel.add(lblTimeLeft);
-        auctionPanel.add(bidPanel);
+        auctionPanel.add(bottomArea);
 
-        // --- CENTRO (CHAT E LOGS) ---
+        // --- CENTRO (CHAT) ---
         chatArea = new JTextArea();
         chatArea.setEditable(false);
         chatArea.setFont(new Font("Consolas", Font.PLAIN, 14));
@@ -75,7 +115,7 @@ public class MainGUIClient extends JFrame {
         JScrollPane scrollPane = new JScrollPane(chatArea);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Chat & Eventos do Servidor"));
 
-        // --- PAINEL INFERIOR (ENVIAR MENSAGENS) ---
+        // --- PAINEL INFERIOR (ENVIAR) ---
         JPanel chatInputPanel = new JPanel(new BorderLayout());
         inputField = new JTextField();
         inputField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -84,7 +124,6 @@ public class MainGUIClient extends JFrame {
         chatInputPanel.add(inputField, BorderLayout.CENTER);
         chatInputPanel.add(btnSend, BorderLayout.EAST);
 
-        // Adiciona tudo na Janela Principal
         add(auctionPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(chatInputPanel, BorderLayout.SOUTH);
@@ -92,8 +131,24 @@ public class MainGUIClient extends JFrame {
         // --- EVENTOS DE CLIQUE ---
         btnBid.addActionListener(e -> enviarLance());
         btnSend.addActionListener(e -> enviarChat());
-        // Enviar chat ao apertar Enter no campo de texto
         inputField.addActionListener(e -> enviarChat()); 
+        
+        // Botões do Admin
+        btnAddItem.addActionListener(e -> {
+            String name = txtItemName.getText().trim();
+            String price = txtItemPrice.getText().trim();
+            if(!name.isEmpty() && !price.isEmpty()) {
+                out.println("ADD_ITEM|" + name + "|" + price);
+                txtItemName.setText("");
+                txtItemPrice.setText("");
+            }
+        });
+        
+        btnStartAuction.addActionListener(e -> out.println("START_AUCTION"));
+        
+        // FASE 12: Eventos dos novos controles ao vivo
+        btnAddTime.addActionListener(e -> out.println("ADD_TIME|5"));
+        btnForceEnd.addActionListener(e -> out.println("FORCE_END_AUCTION"));
     }
 
     private void conectar() {
@@ -101,16 +156,24 @@ public class MainGUIClient extends JFrame {
         if (nome == null || nome.trim().isEmpty()) {
             System.exit(0);
         }
+        
+        // MUTAÇÃO: Tela do Leiloeiro Supremo
+        if (nome.equals("admin1207")) {
+            bottomArea.remove(bidPanel);
+            bottomArea.add(adminPanel, BorderLayout.CENTER);
+            bottomArea.revalidate();
+            bottomArea.repaint();
+            setTitle("BidRoom - PAINEL DO LEILOEIRO");
+            appendChat("[SISTEMA] Autenticado como Leiloeiro Supremo!");
+        }
 
         try {
-            // Conecta ao servidor TCP raiz que construímos
             socket = new Socket("127.0.0.1", 5000);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             out.println("LOGIN|" + nome);
 
-            // Thread secundária dedicada a ESCUTAR o servidor em background
             new Thread(() -> {
                 try {
                     String mensagem;
@@ -128,9 +191,7 @@ public class MainGUIClient extends JFrame {
         }
     }
 
-    // O CÉREBRO DA INTERFACE: Traduz o protocolo para a tela
     private void processarMensagemServidor(String mensagem) {
-        // SwingUtilities garante que as mudanças na tela ocorram na Thread correta de UI
         SwingUtilities.invokeLater(() -> {
             String[] partes = mensagem.split("\\|", -1);
             String acao = partes[0];
@@ -143,7 +204,6 @@ public class MainGUIClient extends JFrame {
                     break;
                 case "TIME":
                     lblTimeLeft.setText("Tempo restante: " + partes[1] + "s");
-                    // Pisca em vermelho quando faltar pouco tempo (efeito visual)
                     if (Integer.parseInt(partes[1]) <= 5) {
                         lblTimeLeft.setForeground(Color.RED);
                     } else {
@@ -164,7 +224,6 @@ public class MainGUIClient extends JFrame {
                 case "LOGIN_OK":
                 case "INFO":
                 case "ERROR":
-                    // Junta o resto da mensagem para ignorar outros pipes caso existam
                     String texto = mensagem.substring(acao.length() + 1);
                     appendChat("[" + acao + "] " + texto);
                     break;
@@ -175,7 +234,6 @@ public class MainGUIClient extends JFrame {
         });
     }
 
-    // Manda um comando estruturado de lance pro servidor
     private void enviarLance() {
         String valor = bidField.getText().trim();
         if (!valor.isEmpty()) {
@@ -184,7 +242,6 @@ public class MainGUIClient extends JFrame {
         }
     }
 
-    // Manda texto livre, mas checa se é o comando de PERFIL pra inspecionar a grana
     private void enviarChat() {
         String texto = inputField.getText().trim();
         if (!texto.isEmpty()) {
@@ -199,7 +256,6 @@ public class MainGUIClient extends JFrame {
 
     private void appendChat(String texto) {
         chatArea.append(texto + "\n");
-        // Rola o chat pra baixo automaticamente
         chatArea.setCaretPosition(chatArea.getDocument().getLength());
     }
 

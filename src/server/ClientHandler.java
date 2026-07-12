@@ -104,6 +104,55 @@ public class ClientHandler implements Runnable {
                         sendMessage("INFO|==================");
                         break;
                         
+                    case "ADD_ITEM":
+                        if (this.user == null || !this.user.isAdmin()) {
+                            sendMessage("ERROR|Acesso negado. Apenas o Leiloeiro pode usar este comando.");
+                            break;
+                        }
+                        if (comando.length >= 3) {
+                            try {
+                                String itemName = comando[1];
+                                double startPrice = Double.parseDouble(comando[2]);
+                                server.getAuctionManager().addItem(itemName, startPrice);
+                            } catch (NumberFormatException e) {
+                                sendMessage("ERROR|Preço inválido. Use números (ex: 500.0).");
+                            }
+                        } else {
+                            sendMessage("ERROR|Formato inválido. Use ADD_ITEM|Nome|Preco");
+                        }
+                        break;
+
+                    case "START_AUCTION":
+                        if (this.user == null || !this.user.isAdmin()) {
+                            sendMessage("ERROR|Acesso negado. Apenas o Leiloeiro pode usar este comando.");
+                            break;
+                        }
+                        server.getAuctionManager().startNextAuction();
+                        break;
+                        
+                    case "ADD_TIME":
+                        if (this.user == null || !this.user.isAdmin()) {
+                            sendMessage("ERROR|Acesso negado. Apenas o Leiloeiro pode usar este comando.");
+                            break;
+                        }
+                        if (comando.length > 1) {
+                            try {
+                                int seconds = Integer.parseInt(comando[1]);
+                                server.getAuctionManager().addTime(seconds);
+                            } catch (NumberFormatException e) {
+                                sendMessage("ERROR|Valor de tempo inválido.");
+                            }
+                        }
+                        break;
+                        
+                    case "FORCE_END_AUCTION":
+                        if (this.user == null || !this.user.isAdmin()) {
+                            sendMessage("ERROR|Acesso negado. Apenas o Leiloeiro pode usar este comando.");
+                            break;
+                        }
+                        server.getAuctionManager().forceCloseAuction();
+                        break;
+                        
                     default:
                         sendMessage("ERROR|Comando desconhecido: " + acao);
                         break;

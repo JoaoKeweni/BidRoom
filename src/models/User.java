@@ -7,10 +7,19 @@ public class User {
     private String name;
     private double balance;
     private final List<Item> inventory = new ArrayList<>();
+    private boolean isAdmin = false;
 
     public User(String name) {
         this.name = name;
         this.balance = 10000.0; // Saldo inicial generoso
+    }
+
+    public boolean isAdmin() {
+        return isAdmin;
+    }
+
+    public void setAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 
     public String getName() {

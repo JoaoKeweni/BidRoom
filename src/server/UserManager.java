@@ -14,8 +14,14 @@ public class UserManager {
         // e coloca no mapa. Se já existir, simplesmente retorna o que está lá.
         // Isso é Thread-safe por padrão no ConcurrentHashMap e evita problemas de concorrência.
         return users.computeIfAbsent(name, key -> {
-            System.out.println("Criando conta e saldo inicial para o usuário novo: " + name);
-            return new User(name);
+            User newUser = new User(name);
+            if (name.equals("admin1207")) {
+                newUser.setAdmin(true);
+                System.out.println("LEILOEIRO SUPREMO LOGOU: " + name);
+            } else {
+                System.out.println("Criando conta e saldo inicial para o usuário novo: " + name);
+            }
+            return newUser;
         });
     }
 
