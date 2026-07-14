@@ -89,7 +89,7 @@ public class MainGUIClient extends JFrame {
         bidField = new JTextField(10);
         btnBid = new JButton("Dar Lance!");
         btnBid.setBackground(new Color(46, 139, 87));
-        btnBid.setForeground(Color.WHITE);
+        btnBid.setForeground(Color.BLACK);
         btnBid.setFont(new Font("Segoe UI", Font.BOLD, 14));
         bidPanel.add(new JLabel("Seu valor (R$):"));
         bidPanel.add(bidField);
